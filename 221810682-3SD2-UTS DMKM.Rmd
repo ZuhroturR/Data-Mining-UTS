@@ -1,0 +1,66 @@
+---
+title: "UTS DMKM"
+author: "Zuhrotur Rofiah"
+date: "10/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Import data
+```{r}
+library(readr)
+lymphography <- read_csv("C:/A/#SEM 5/DMKM (Dr. Eng. Arie Wahyu Wijayanto, SST, MT.)/Z/UTS/lymphography.data", col_names = FALSE)
+head(lymphography)
+View(lymphography)
+```
+
+Load library yang yang dibutuhkan. Library class digunakan untuk membuat model knn dan library caret digunakan untuk membuat confusion matriks dan melihat akurasi model. 
+```{r message=FALSE, warning=FALSE}
+library(class)
+library(caret)
+```
+
+Mengecek variabel
+```{r}
+str(lymphography)
+```
+
+Mengubah tipe variabel menjadi factor
+```{r}
+for(i in names(lymphography)){
+  lymphography[,i]= as.factor(lymphography[,i])
+}
+str(lymphography)
+```
+
+Pembagian data menjadi data training (80% dari data awal) dan data testing (20% dari data awal)
+```{r}
+set.seed(1234)
+sampel <- sample(2, nrow(lymphography), replace = T, prob = c(0.8,0.2))
+data_training <- lymphography[sampel == 1, ]
+data_testing <- lymphography[sampel == 2, ]
+print(paste("Jumlah Data Training: ", nrow(data_training), "| Jumlah Data Testing: ", nrow(data_testing)))
+```
+
+Membuat model klasifikasi. Target variabel pada klasifikasi ini adalah variabel x1 (class: normal find, metastases, malign lymph, fibrosis), sehingga variabel ini tidak perlu dimasukkan ke dalam model klasifikasi.
+```{r}
+klasifikasi <- knn(train = data_training[ ,-1], test = data_testing[ ,-1], cl = data_training$X1, k=12)
+```
+
+Confusion matrix. Confusion matrix digunakan untuk mengevaluasi model klasifikasi.
+```{r}
+confusionMatrix(table(klasifikasi, data_testing$X1))
+```
+
+Mencari k yang optimal. Biasanya k yang optimal adalah di sekitar akar dari banyak observasi. Untuk kasus ini akar dari banyak observasi (148) adalah 12.1655 maka akan digunakan k=12.
+```{r}
+for(i in 1:40){
+  klasifikasi_knn <- knn(train = data_training[ ,-1], test = data_testing[ ,-1], cl = data_training$X1, k=i)
+  akurasi <- 100*sum(data_testing$X1 == klasifikasi_knn) / nrow(data_testing)
+  cat("K = ", i," akurasinya ",akurasi, '%', '\n')
+}
+```
+
